@@ -1,4 +1,4 @@
-package money_tracking_app.demo;
+package moneytracking.demo;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

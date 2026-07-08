@@ -33,7 +33,7 @@ build/
 .vscode/
 
 ###  Configuration & Secrets (Crucial for Security) ### 
-application-local.properties
-application-local.yml
-application-local.yaml
+*application-dev.yml
+*application-prod.yml
+*application.yml
 .env

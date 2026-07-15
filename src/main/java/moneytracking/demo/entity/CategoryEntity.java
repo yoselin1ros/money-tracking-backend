@@ -2,6 +2,8 @@ package moneytracking.demo.entity;
 
 import java.time.Instant;
 
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -13,8 +15,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 @Entity
+@Table(name = "categories", schema = "migrations")
 public class CategoryEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -22,13 +26,15 @@ public class CategoryEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id") // Creates user_id foreign key column
+    @NotFound(action = NotFoundAction.IGNORE)
     private UserEntity user;
 
-    @Column(nullable = false)
+    @Column(name="name", nullable = false)
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "type_ref_item_id")
+    @JoinColumn(name = "type_ref_item_id", nullable = true)
+    @NotFound(action = NotFoundAction.IGNORE)
     private RefItemEntity type;
 
     @Column(name = "is_default")

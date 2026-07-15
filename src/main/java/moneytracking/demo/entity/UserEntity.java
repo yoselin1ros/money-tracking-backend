@@ -15,8 +15,10 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 @Entity
+@Table(name = "users", schema = "migrations")
 public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

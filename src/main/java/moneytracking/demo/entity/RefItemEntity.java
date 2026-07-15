@@ -8,8 +8,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 @Entity
+@Table(name = "ref_items", schema = "migrations")
 public class RefItemEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

@@ -14,4 +14,7 @@ public interface CategoryRepository extends JpaRepository <CategoryEntity, Long>
     List<CategoryEntity> listCategoriesByUserId(@Param("userId") Long userId);
 
     List<CategoryEntity> findByUser(UserEntity user);
+
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM CategoryEntity c WHERE c.name = :name AND c.user.id = :userId")
+    boolean existsByNameAndUserId(String name, Long userId);
 }

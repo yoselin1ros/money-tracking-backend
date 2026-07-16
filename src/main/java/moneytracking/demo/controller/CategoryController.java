@@ -4,9 +4,11 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,6 +43,25 @@ public class CategoryController {
         ApiResponse<List<CategoryResponseDTO>> response = new ApiResponse<List<CategoryResponseDTO>>(
             true, "Categories retrieved successfully", userCategories
         );
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<CategoryResponseDTO>> updateCategory(
+        @PathVariable Long id, 
+        @Valid @RequestBody CategoryRequestDTO request
+    ) {
+        CategoryResponseDTO category = categoryService.updateCategory(id, request);
+        ApiResponse<CategoryResponseDTO> response = new ApiResponse<CategoryResponseDTO>(
+            true, "Category updated successfully",  category
+        );
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Boolean>> deleteCategory(@PathVariable Long id) {
+        boolean isDeleted = categoryService.deleteCategory(id);
+        ApiResponse<Boolean> response = new ApiResponse<>(true, "Category deleted successfully", isDeleted);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

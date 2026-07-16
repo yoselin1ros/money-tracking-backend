@@ -14,8 +14,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 
 @Entity
+@Table(name = "sessions", schema = "migrations")
 public class SessionEntity {
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)

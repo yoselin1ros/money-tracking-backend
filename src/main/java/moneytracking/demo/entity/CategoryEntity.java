@@ -24,7 +24,7 @@ import jakarta.persistence.Table;
 @Table(name = "categories", schema = "migrations")
 public class CategoryEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

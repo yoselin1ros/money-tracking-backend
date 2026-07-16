@@ -12,8 +12,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 @Entity
+@Table(name = "notification_preferences", schema = "migrations")
 public class NotificationPreferencesEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

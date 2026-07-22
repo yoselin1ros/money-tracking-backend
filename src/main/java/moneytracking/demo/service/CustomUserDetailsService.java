@@ -1,12 +1,11 @@
 package moneytracking.demo.service;
 
-import java.util.Collections;
-
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import moneytracking.demo.dto.CustomUserDetails;
 import moneytracking.demo.entity.UserEntity;
 import moneytracking.demo.repository.UserRepository;
 
@@ -19,15 +18,11 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserEntity user = userRepository.findByEmail(username);
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        UserEntity user = userRepository.findByEmail(email);
         if (user == null) {
-            throw new UsernameNotFoundException("User Not Found with username: " + username);
+            throw new UsernameNotFoundException("User Not Found with email: " + email);
         }
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(), // it should be username
-                user.getPasswordHash(),
-                Collections.emptyList()
-        );
+        return new CustomUserDetails(user);
     }
 }

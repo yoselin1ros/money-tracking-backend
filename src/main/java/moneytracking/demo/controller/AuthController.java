@@ -15,7 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 import moneytracking.demo.entity.UserEntity;
 import moneytracking.demo.repository.UserRepository;
 import moneytracking.demo.security.JwtUtil;
+import moneytracking.demo.service.ProfileService;
 import moneytracking.demo.dto.ApiResponse;
+import moneytracking.demo.dto.LoginResponse;
+import moneytracking.demo.dto.UserResponseDTO;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -24,21 +27,24 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder encoder;
     private final JwtUtil jwtUtils;
+    private final ProfileService profileService;
 
     public AuthController(
         AuthenticationManager authenticationManager,
         UserRepository userRepository,
         PasswordEncoder encoder,
-        JwtUtil jwtUtils
+        JwtUtil jwtUtils,
+        ProfileService profileService
     ) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.encoder = encoder;
         this.jwtUtils = jwtUtils;
+        this.profileService = profileService;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<String>> authenticateUser(@RequestBody UserEntity user) {
+    public ResponseEntity<ApiResponse<LoginResponse>> authenticateUser(@RequestBody UserEntity user) {
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
                 user.getEmail(),
@@ -47,7 +53,16 @@ public class AuthController {
         );
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String jwt = jwtUtils.generateToken(userDetails.getUsername());
-        ApiResponse<String> response = new ApiResponse<>(true, "User logged in successfully!", jwt);
+
+        UserResponseDTO userResponse = profileService.getUserByEmail(userDetails.getUsername());
+        
+        LoginResponse loginResponse = new LoginResponse();
+        loginResponse.setAccessToken(jwt);
+        loginResponse.setTokenType("Bearer");
+        loginResponse.setExpiresIn(3600); // time in seconds
+        loginResponse.setUser(userResponse);
+
+        ApiResponse<LoginResponse> response = new ApiResponse<>(true, "User logged in successfully!", loginResponse);
         return ResponseEntity.ok(response);
     }
     @PostMapping("/register")

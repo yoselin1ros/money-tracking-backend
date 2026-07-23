@@ -35,6 +35,9 @@ public class CategoryEntity {
     @Column(name="name", nullable = false)
     private String name;
 
+    @Column(name="description", nullable = true)
+    private String description;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "type_ref_item_id", nullable = true)
     @NotFound(action = NotFoundAction.IGNORE)
@@ -75,6 +78,14 @@ public class CategoryEntity {
         this.name = name;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public RefItemEntity getType() {
         return type;
     }
@@ -109,7 +120,7 @@ public class CategoryEntity {
 
     @Override
     public String toString() {
-        return "CategoryEntity [id=" + id + ", user=" + user + ", name=" + name + ", type=" + type + ", isDefault="
+        return "CategoryEntity [id=" + id + ", user=" + user + ", name=" + name + ", description=" + description + ", type=" + type + ", isDefault="
                 + isDefault + ", createdAt=" + createdAt + ", updatedAt=" + updatedAt + "]";
     }
 

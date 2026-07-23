@@ -7,6 +7,7 @@ public class CategoryRequestDTO {
     @NotNull(message = "Name is a required field")
     @Size(min = 3, max = 100, message = "Name must be between 3 and 100 characters")
     private String name;
+    private String description;
 
     private Long typeId;
     private Long userId;
@@ -17,6 +18,14 @@ public class CategoryRequestDTO {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public Long getTypeId() {
@@ -37,7 +46,8 @@ public class CategoryRequestDTO {
 
     @Override
     public String toString() {
-        return "CategoryRequestDTO [name=" + name + ", typeId=" + typeId + ", userId=" + userId + "]";
+        return "CategoryRequestDTO [name=" + name + ", description=" + description + ", typeId=" + typeId + ", userId="
+                + userId + "]";
     }
 
 }

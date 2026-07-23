@@ -17,4 +17,6 @@ public interface CategoryRepository extends JpaRepository <CategoryEntity, Long>
 
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM CategoryEntity c WHERE c.name = :name AND c.user.id = :userId")
     boolean existsByNameAndUserId(String name, Long userId);
+
+    List<CategoryEntity> findByIsDefault(boolean isDefault);
 }

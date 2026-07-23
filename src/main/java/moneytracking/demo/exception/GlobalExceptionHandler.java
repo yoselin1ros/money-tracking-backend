@@ -45,6 +45,18 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    // Handles your manual business logic failures
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Object> handleIllegalArgumentException(IllegalArgumentException ex) {
+        // Wrap the single message into the same list format used above
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "Conflict");
+        response.put("message", ex.getMessage());
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", HttpStatus.CONFLICT.value());
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler({DataIntegrityViolationException.class, ObjectOptimisticLockingFailureException.class})
     public ResponseEntity<Object> handleConflict(HttpServletRequest request, Exception ex) {
         Map<String, Object> body = new HashMap<>();

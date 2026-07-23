@@ -1,7 +1,8 @@
 CREATE TABLE categories (
     id BIGSERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
+    user_id INTEGER,
     name VARCHAR(100) NOT NULL,
+    description VARCHAR(200),
     type_ref_item_id INTEGER NOT NULL,
     is_default BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -45,7 +46,7 @@ CREATE TABLE transactions (
     account_id INTEGER NOT NULL,
     category_id INTEGER NOT NULL, 
     amount DECIMAL default 0,
-    type_ref_item_id INTEGER NOT NULL,
+    type_ref_item_id INTEGER NOT NULL,-- TODO: remove??
     transaction_date DATE DEFAULT now(),
     note VARCHAR(200),
     used_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

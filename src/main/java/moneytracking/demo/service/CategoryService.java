@@ -52,6 +52,7 @@ public class CategoryService {
         // 2. Map Request DTO to Entity
         CategoryEntity category = new CategoryEntity();
         category.setName(request.getName());
+        category.setDescription(request.getDescription());
         category.setUser(user);
         category.setType(type);
 
@@ -80,6 +81,7 @@ public class CategoryService {
         }
 
         category.setName(request.getName());
+        category.setDescription(request.getDescription());
 
         RefItemEntity type = refItemRepository.findById(request.getTypeId())
             .orElseThrow(() -> new ResourceNotFoundException("Type not found"));
@@ -107,10 +109,24 @@ public class CategoryService {
         CategoryResponseDTO dto = new CategoryResponseDTO();
         dto.setId(category.getId());
         dto.setName(category.getName());
+        dto.setDescription(category.getDescription());
         if (category.getType() != null) {
             dto.setTypeId(category.getType().getId());
             dto.setTypeName(category.getType().getName());
         }
         return dto;
+    }
+
+    public Boolean createDefaultCategoriesForUser(UserEntity user) {
+        List<CategoryEntity> defaultCategories = categoryRepository.findByIsDefault(true);
+        for (CategoryEntity defCategory : defaultCategories) {
+            CategoryEntity category = new CategoryEntity();
+            category.setName(defCategory.getName());
+            category.setUser(user);
+            category.setDescription(defCategory.getDescription());
+            category.setType(defCategory.getType());
+            categoryRepository.save(category);
+        }
+        return true;
     }
 }

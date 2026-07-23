@@ -3,6 +3,7 @@ package moneytracking.demo.dto;
 public class CategoryResponseDTO {
     private Long id;
     private String name;
+    private String description;
     private Long typeId;
     private String typeName;
 
@@ -20,6 +21,14 @@ public class CategoryResponseDTO {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public Long getTypeId() {
@@ -40,7 +49,7 @@ public class CategoryResponseDTO {
 
     @Override
     public String toString() {
-        return "CategoryResponseDTO [id=" + id + ", name=" + name + ", typeId=" + typeId + ", typeName=" + typeName
+        return "CategoryResponseDTO [id=" + id + ", name=" + name + ", description=" + description + ", typeId=" + typeId + ", typeName=" + typeName
                 + "]";
     }
 

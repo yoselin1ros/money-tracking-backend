@@ -6,41 +6,43 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
 import moneytracking.demo.entity.UserEntity;
-import moneytracking.demo.repository.UserRepository;
 import moneytracking.demo.security.JwtUtil;
+import moneytracking.demo.service.AuthService;
+import moneytracking.demo.service.CategoryService;
 import moneytracking.demo.service.ProfileService;
 import moneytracking.demo.dto.ApiResponse;
 import moneytracking.demo.dto.LoginResponse;
+import moneytracking.demo.dto.UserRequestDTO;
 import moneytracking.demo.dto.UserResponseDTO;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
     private final AuthenticationManager authenticationManager;
-    private final UserRepository userRepository;
-    private final PasswordEncoder encoder;
     private final JwtUtil jwtUtils;
     private final ProfileService profileService;
+    private final AuthService authService;
+    private final CategoryService categoryService;
 
     public AuthController(
         AuthenticationManager authenticationManager,
-        UserRepository userRepository,
-        PasswordEncoder encoder,
         JwtUtil jwtUtils,
-        ProfileService profileService
+        ProfileService profileService,
+        AuthService authService,
+        CategoryService categoryService
     ) {
         this.authenticationManager = authenticationManager;
-        this.userRepository = userRepository;
-        this.encoder = encoder;
         this.jwtUtils = jwtUtils;
         this.profileService = profileService;
+        this.authService = authService;
+        this.categoryService = categoryService;
     }
 
     @PostMapping("/login")
@@ -66,24 +68,12 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<String>> registerUser(@RequestBody UserEntity request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            ApiResponse<String> response = new ApiResponse<>(false, "Error: Email is already taken!", null);
-            return ResponseEntity.badRequest().body(response);
+    public ResponseEntity<ApiResponse<String>> registerUser(@Valid @RequestBody UserRequestDTO request) {
+        UserEntity newUser = authService.registerUser(request);
+        if (newUser != null) {
+            Boolean defaultCategoriesCreated = categoryService.createDefaultCategoriesForUser(newUser);
+            // TODO: Handle the case where default categories creation fails, if necessary
         }
-
-        if (userRepository.existsByDisplayName(request.getDisplayName())) {
-            ApiResponse<String> response = new ApiResponse<>(false, "Error: Display name is already taken!", null);
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        // Create new user's account
-        UserEntity newUser = new UserEntity();
-        newUser.setEmail(request.getEmail());
-        newUser.setPasswordHash(encoder.encode(request.getPasswordHash())); // Hash the password
-        newUser.setDisplayName(request.getDisplayName());
-        newUser.setPreferredCurrency(request.getPreferredCurrency());
-        userRepository.save(newUser);
 
         ApiResponse<String> response = new ApiResponse<>(true, "User registered successfully!", null);
         return new ResponseEntity<>(response, HttpStatus.OK);

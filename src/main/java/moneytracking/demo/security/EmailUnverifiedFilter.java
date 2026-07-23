@@ -31,7 +31,7 @@ public class EmailUnverifiedFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
 
         // 1. Bypass public or verification endpoints to avoid infinite loops
-        if (path.equals("/verify-email") || path.equals("/login") || path.equals("/register")) {
+        if (path.equals("/api/auth/verify-email") || path.equals("/api/auth/login") || path.equals("/api/auth/register")) {
             filterChain.doFilter(request, response);
             return;
         }

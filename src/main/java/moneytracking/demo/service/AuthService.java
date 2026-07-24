@@ -29,7 +29,7 @@ public class AuthService {
         // Create new user's account
         UserEntity newUser = new UserEntity();
         newUser.setEmail(user.getEmail());
-        newUser.setPasswordHash(encoder.encode(user.getPasswordHash()));
+        newUser.setPasswordHash(encoder.encode(user.getPassword()));
         newUser.setDisplayName(user.getDisplayName());
         newUser.setPreferredCurrency(user.getPreferredCurrency());
         // Save the user to the database

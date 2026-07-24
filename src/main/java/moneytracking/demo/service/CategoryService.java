@@ -4,11 +4,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import moneytracking.demo.dto.CategoryRequestDTO;
 import moneytracking.demo.dto.CategoryResponseDTO;
+import moneytracking.demo.dto.CustomUserDetails;
 import moneytracking.demo.entity.CategoryEntity;
 import moneytracking.demo.entity.RefItemEntity;
 import moneytracking.demo.entity.UserEntity;
@@ -73,6 +76,16 @@ public class CategoryService {
     public CategoryResponseDTO updateCategory(Long id, CategoryRequestDTO request) {
         CategoryEntity category = categoryRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() 
+            && auth.getPrincipal() instanceof CustomUserDetails userDetails) {
+            if (!category.getUser().getId().equals(userDetails.getId())) {
+                throw new SecurityException("You are not authorized to update this category");
+            }
+        } else {
+            throw new SecurityException("Authentication information is missing or invalid");
+        }
 
         // Check if a category with the same name already exists for the user
         if (categoryRepository.existsByNameAndUserId(request.getName(), request.getUserId()) && 

@@ -9,14 +9,20 @@ import org.springframework.security.core.userdetails.UserDetails;
 import moneytracking.demo.entity.UserEntity;
 
 public class CustomUserDetails implements UserDetails {
+    private final Long id;
     private final String email;
     private final String password;
     private final boolean emailVerified;
 
     public CustomUserDetails(UserEntity user) {
+        this.id = user.getId();
         this.email = user.getEmail();
         this.password = user.getPasswordHash();
         this.emailVerified = user.isEmailVerified();
+    }
+
+    public Long getId() {
+        return id;
     }
 
     public boolean isEmailVerified() {

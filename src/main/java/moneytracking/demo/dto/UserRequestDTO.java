@@ -11,7 +11,7 @@ public class UserRequestDTO {
 
     @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
     @NotNull(message = "Password is a required field")
-    private String passwordHash;
+    private String password;
     
     @Size(min = 3, max = 50, message = "Display name must be between 3 and 50 characters")
     @NotNull(message = "Display name is a required field")
@@ -27,12 +27,12 @@ public class UserRequestDTO {
         this.email = email;
     }
 
-    public String getPasswordHash() {
-        return passwordHash;
+    public String getPassword() {
+        return password;
     }
 
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getDisplayName() {
@@ -53,7 +53,7 @@ public class UserRequestDTO {
 
     @Override
     public String toString() {
-        return "UserRequestDTO [email=" + email + ", passwordHash=" + passwordHash + ", displayName=" + displayName
+        return "UserRequestDTO [email=" + email + ", password=" + password + ", displayName=" + displayName
                 + ", preferredCurrency=" + preferredCurrency + "]";
     }
 

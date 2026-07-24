@@ -46,11 +46,11 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> authenticateUser(@RequestBody UserEntity user) {
+    public ResponseEntity<ApiResponse<LoginResponse>> authenticateUser(@RequestBody UserRequestDTO user) {
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
                 user.getEmail(),
-                user.getPasswordHash()
+                user.getPassword()
             )
         );
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();

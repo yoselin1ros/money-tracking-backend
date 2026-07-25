@@ -1,5 +1,7 @@
 package moneytracking.demo.repository;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import moneytracking.demo.entity.TransactionEntity;
@@ -9,4 +11,6 @@ public interface TransactionRepository extends JpaRepository <TransactionEntity,
     Boolean existByCategoryId(Long categoryId);
 
     boolean existsByAccountId(Long accountId);
+
+    List<TransactionEntity> findByUserIdOrderByIdAsc(Long userId);
 }

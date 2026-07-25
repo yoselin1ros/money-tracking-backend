@@ -59,9 +59,9 @@ public class AccountService {
         AccountEntity account = accountRepository.findById(accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() 
-            && auth.getPrincipal() instanceof CustomUserDetails userDetails) {
+        Authentication currentUser = SecurityContextHolder.getContext().getAuthentication();
+        if (currentUser != null && currentUser.isAuthenticated() 
+            && currentUser.getPrincipal() instanceof CustomUserDetails userDetails) {
             if (!account.getUser().getId().equals(userDetails.getId())) {
                 throw new SecurityException("You are not authorized to update this account");
             }
@@ -80,15 +80,24 @@ public class AccountService {
     }
 
     @Transactional
-    public Boolean deleteAccount(Long AccountId) {
-        if (!accountRepository.existsById(AccountId)) {
-            throw new ResourceNotFoundException("Account not found");
+    public Boolean deleteAccount(Long accountId) {
+        AccountEntity account = accountRepository.findById(accountId)
+            .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+
+        Authentication currentUser = SecurityContextHolder.getContext().getAuthentication();
+        if (currentUser != null && currentUser.isAuthenticated() 
+            && currentUser.getPrincipal() instanceof CustomUserDetails userDetails) {
+            if (!account.getUser().getId().equals(userDetails.getId())) {
+                throw new SecurityException("You are not authorized to delete this account");
+            }
+        } else {
+            throw new SecurityException("Authentication information is missing or invalid");
         }
 
-        if (transactionRepository.existsByAccountId(AccountId)) {
+        if (transactionRepository.existsByAccountId(accountId)) {
             throw new DataIntegrityViolationException("Cannot delete account with associated transactions");
         }
-        accountRepository.deleteById(AccountId);
+        accountRepository.delete(account);
         return true;
     }
 

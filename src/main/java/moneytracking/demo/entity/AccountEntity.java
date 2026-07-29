@@ -1,5 +1,6 @@
 package moneytracking.demo.entity;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -37,10 +38,10 @@ public class AccountEntity {
     private RefItemEntity type;
 
     @Column(name = "initial_balance")
-    private Integer initialBalance = 0;
+    private BigDecimal initialBalance = BigDecimal.ZERO;
 
     @Column(name = "current_balance")
-    private Integer currentBalance = 0;
+    private BigDecimal currentBalance = BigDecimal.ZERO;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
@@ -82,19 +83,19 @@ public class AccountEntity {
         this.type = type;
     }
 
-    public Integer getInitialBalance() {
+    public BigDecimal getInitialBalance() {
         return initialBalance;
     }
 
-    public void setInitialBalance(Integer initialBalance) {
+    public void setInitialBalance(BigDecimal initialBalance) {
         this.initialBalance = initialBalance;
     }
 
-    public Integer getCurrentBalance() {
+    public BigDecimal getCurrentBalance() {
         return currentBalance;
     }
 
-    public void setCurrentBalance(Integer currentBalance) {
+    public void setCurrentBalance(BigDecimal currentBalance) {
         this.currentBalance = currentBalance;
     }
 

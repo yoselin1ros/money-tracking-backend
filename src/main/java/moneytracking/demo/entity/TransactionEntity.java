@@ -1,5 +1,6 @@
 package moneytracking.demo.entity;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -38,7 +39,7 @@ public class TransactionEntity {
     private CategoryEntity category;
 
     @Column(nullable = false)
-    private Integer amount = 0;
+    private BigDecimal amount = BigDecimal.ZERO;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "type_ref_item_id")
@@ -89,11 +90,11 @@ public class TransactionEntity {
         this.category = category;
     }
 
-    public Integer getAmount() {
+    public BigDecimal getAmount() {
         return amount;
     }
 
-    public void setAmount(Integer amount) {
+    public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
 

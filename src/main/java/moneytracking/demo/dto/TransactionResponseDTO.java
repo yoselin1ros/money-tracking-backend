@@ -1,12 +1,14 @@
 package moneytracking.demo.dto;
 
+import java.math.BigDecimal;
+
 public class TransactionResponseDTO {
     private Long id;
     private Long accountId;
     private String accountName;
     private Long categoryId;
     private String categoryName;
-    private Integer amount;
+    private BigDecimal amount;
     private Long typeId;
     private String typeName;
     private String note;
@@ -52,11 +54,11 @@ public class TransactionResponseDTO {
         this.categoryName = categoryName;
     }
 
-    public Integer getAmount() {
+    public BigDecimal getAmount() {
         return amount;
     }
 
-    public void setAmount(Integer amount) {
+    public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
 

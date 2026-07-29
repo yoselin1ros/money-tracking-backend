@@ -1,5 +1,7 @@
 package moneytracking.demo.dto;
 
+import java.math.BigDecimal;
+
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -13,7 +15,7 @@ public class AccountRequestDTO {
     @NotNull(message = "Type is a required field")
     private Long typeId;
     
-    private Integer initialBalance;
+    private BigDecimal initialBalance;
 
     public Long getUserId() {
         return userId;
@@ -39,11 +41,11 @@ public class AccountRequestDTO {
         this.typeId = typeId;
     }
 
-    public Integer getInitialBalance() {
+    public BigDecimal getInitialBalance() {
         return initialBalance;
     }
 
-    public void setInitialBalance(Integer initialBalance) {
+    public void setInitialBalance(BigDecimal initialBalance) {
         this.initialBalance = initialBalance;
     }
 

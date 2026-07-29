@@ -5,16 +5,14 @@ import java.math.BigDecimal;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
-public class TransactionRequestDTO {
+public class FrequentExpenseRequestDTO {
     private Long userId;
-    private Long accountId;
     private Long categoryId;
+    private String name;
 
     @NotNull(message = "Amount is a required field")
     @Min(value = 1, message = "Ammount must be higuer than zero")
     private BigDecimal amount;
-
-    private String note;
 
     public Long getUserId() {
         return userId;
@@ -22,14 +20,6 @@ public class TransactionRequestDTO {
 
     public void setUserId(Long userId) {
         this.userId = userId;
-    }
-
-    public Long getAccountId() {
-        return accountId;
-    }
-
-    public void setAccountId(Long accountId) {
-        this.accountId = accountId;
     }
 
     public Long getCategoryId() {
@@ -40,6 +30,14 @@ public class TransactionRequestDTO {
         this.categoryId = categoryId;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public BigDecimal getAmount() {
         return amount;
     }
@@ -48,18 +46,10 @@ public class TransactionRequestDTO {
         this.amount = amount;
     }
 
-    public String getNote() {
-        return note;
-    }
-
-    public void setNote(String note) {
-        this.note = note;
-    }
-
     @Override
     public String toString() {
-        return "TransactionRequestDTO [userId=" + userId + ", accountId=" + accountId + ", categoryId=" + categoryId
-                + ", amount=" + amount + ", note=" + note + "]";
+        return "FrequentExpenseRequestDTO [userId=" + userId + ", categoryId=" + categoryId + ", name=" + name
+                + ", amount=" + amount + "]";
     }
 
 }

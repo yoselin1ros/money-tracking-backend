@@ -1,12 +1,14 @@
 package moneytracking.demo.dto;
 
+import java.math.BigDecimal;
+
 public class AccountResponseDTO {
     private Long id;
     private String name;
     private Long typeId;
     private String typeName;
-    private Integer initialBalance;
-    private Integer currentBalance;
+    private BigDecimal initialBalance;
+    private BigDecimal currentBalance;
 
     public Long getId() {
         return id;
@@ -40,19 +42,19 @@ public class AccountResponseDTO {
         this.typeName = typeName;
     }
 
-    public Integer getInitialBalance() {
+    public BigDecimal getInitialBalance() {
         return initialBalance;
     }
 
-    public void setInitialBalance(Integer initialBalance) {
+    public void setInitialBalance(BigDecimal initialBalance) {
         this.initialBalance = initialBalance;
     }
 
-    public Integer getCurrentBalance() {
+    public BigDecimal getCurrentBalance() {
         return currentBalance;
     }
 
-    public void setCurrentBalance(Integer currentBalance) {
+    public void setCurrentBalance(BigDecimal currentBalance) {
         this.currentBalance = currentBalance;
     }
 

@@ -131,13 +131,13 @@ public class TransactionService {
         RefItemEntity type = category.getType(); // Assuming the type is derived from the category
 
         // Checking/updating amount in account for expense transactions
-        if (account.getCurrentBalance() < request.getAmount() && type.getName().equals("expense")) {
+        if (account.getCurrentBalance().compareTo(request.getAmount()) < 0 && type.getName().equals("expense")) {
             throw new IllegalArgumentException("Insufficient funds in the account for this transaction");
         }
         if (type.getName().equals("expense")) {
-            account.setCurrentBalance(account.getCurrentBalance() - request.getAmount());
+            account.setCurrentBalance(account.getCurrentBalance().subtract(request.getAmount()));
         } else if (type.getName().equals("income")) {
-            account.setCurrentBalance(account.getCurrentBalance() + request.getAmount());
+            account.setCurrentBalance(account.getCurrentBalance().add(request.getAmount()));
         }
         accountRepository.save(account);
         
@@ -177,15 +177,15 @@ public class TransactionService {
         RefItemEntity type = category.getType(); // Assuming the type is derived from the category
 
         // Checking/updating amount in account for expense transactions
-        if (account.getCurrentBalance() < request.getAmount() && type.getName().equals("expense")) {
+        if (account.getCurrentBalance().compareTo(request.getAmount()) < 0 && type.getName().equals("expense")) {
             throw new IllegalArgumentException("Insufficient funds in the account for this transaction");
         }
         if (type.getName().equals("expense")) {
-            account.setCurrentBalance(account.getCurrentBalance() + transaction.getAmount()); // Revert previous amount
-            account.setCurrentBalance(account.getCurrentBalance() - request.getAmount());
+            account.setCurrentBalance(account.getCurrentBalance().add(transaction.getAmount())); // Revert previous amount
+            account.setCurrentBalance(account.getCurrentBalance().subtract(request.getAmount()));
         } else if (type.getName().equals("income")) {
-            account.setCurrentBalance(account.getCurrentBalance() - transaction.getAmount()); // Revert previous amount
-            account.setCurrentBalance(account.getCurrentBalance() + request.getAmount());
+            account.setCurrentBalance(account.getCurrentBalance().subtract(transaction.getAmount())); // Revert previous amount
+            account.setCurrentBalance(account.getCurrentBalance().add(request.getAmount()));
         }
         accountRepository.save(account);
 
@@ -217,9 +217,9 @@ public class TransactionService {
         RefItemEntity type = transaction.getType();
         AccountEntity account = transaction.getAccount();
         if (type.getName().equals("expense")) {
-            account.setCurrentBalance(account.getCurrentBalance() + transaction.getAmount()); // Revert previous amount
+            account.setCurrentBalance(account.getCurrentBalance().add(transaction.getAmount())); // Revert previous amount
         } else if (type.getName().equals("income")) {
-            account.setCurrentBalance(account.getCurrentBalance() - transaction.getAmount()); // Revert previous amount
+            account.setCurrentBalance(account.getCurrentBalance().subtract(transaction.getAmount())); // Revert previous amount
         }
 
         transactionRepository.delete(transaction);

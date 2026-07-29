@@ -10,6 +10,7 @@ public class TransactionResponseDTO {
     private Long typeId;
     private String typeName;
     private String note;
+    private String transactionDate;
 
     public Long getId() {
         return id;
@@ -83,11 +84,19 @@ public class TransactionResponseDTO {
         this.note = note;
     }
 
+    public String getTransactionDate() {
+        return transactionDate;
+    }
+
+    public void setTransactionDate(String transactionDate) {
+        this.transactionDate = transactionDate;
+    }
+
     @Override
     public String toString() {
         return "TransactionResponseDTO [id=" + id + ", accountId=" + accountId + ", accountName=" + accountName
                 + ", categoryId=" + categoryId + ", categoryName=" + categoryName + ", amount=" + amount + ", typeId="
-                + typeId + ", typeName=" + typeName + ", note=" + note + "]";
+                + typeId + ", typeName=" + typeName + ", note=" + note + ", transactionDate=" + transactionDate + "]";
     }
 
 }

@@ -1,5 +1,9 @@
 package moneytracking.demo.service;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.springframework.security.core.Authentication;
@@ -8,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import moneytracking.demo.dto.CustomUserDetails;
-import moneytracking.demo.dto.TransactionFilterDTO;
 import moneytracking.demo.dto.TransactionRequestDTO;
 import moneytracking.demo.dto.TransactionResponseDTO;
 import moneytracking.demo.entity.AccountEntity;
@@ -40,25 +43,72 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
-    public List<TransactionResponseDTO> listTransactions(Long userId, TransactionFilterDTO filter) {
+    public List<TransactionResponseDTO> listTransactions(Long userId, Long categoryId, String period, String startDate, String endDate) {
         List<TransactionEntity> transactions = transactionRepository.findByUserIdOrderByIdAsc(userId);
-        if (filter != null) {
-            if (filter.getCategoryId() != null) {
-                transactions = transactions.stream()
-                    .filter(t -> t.getCategory().getId().equals(filter.getCategoryId()))
-                    .toList();
-            }
+        if (categoryId != null) {
+            transactions = transactions.stream()
+                .filter(t -> t.getCategory().getId().equals(categoryId))
+                .toList();
+        }
 
-            if (filter.getPeriodName() != null) {
-                String period = filter.getPeriodName();
-                switch (period) {
-                    case "day":
-                        
-                        break;
+        if (period != null) {
+            switch (period) {
+                case "day":
+                    LocalDate today = LocalDate.now();
+                    Instant startOfDay = today.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
+                    Instant endOfDay = today.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant();
+                    transactions = transactions.stream()
+                        .filter(t -> t.getCreatedAt().isAfter(startOfDay) && t.getCreatedAt().isBefore(endOfDay))
+                        .toList();
+                    break;
                 
-                    default:
-                        break;
-                }
+                case "week":
+                    LocalDate startOfWeek = LocalDate.now().with(java.time.DayOfWeek.MONDAY);
+                    Instant startOfWeekInstant = startOfWeek.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
+                    LocalDate endOfWeek = startOfWeek.plusDays(6);
+                    Instant endOfWeekInstant = endOfWeek.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant();
+                    transactions = transactions.stream()
+                        .filter(t -> t.getCreatedAt().isAfter(startOfWeekInstant) && t.getCreatedAt().isBefore(endOfWeekInstant))
+                        .toList();
+                    break;
+                
+                case "month":
+                    LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
+                    Instant startOfMonthInstant = startOfMonth.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
+                    LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
+                    Instant endOfMonthInstant = endOfMonth.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant();
+                    transactions = transactions.stream()
+                        .filter(t -> t.getCreatedAt().isAfter(startOfMonthInstant) && t.getCreatedAt().isBefore(endOfMonthInstant))
+                        .toList();
+                    break;
+
+                case "year":
+                    LocalDate startOfYear = LocalDate.now().withDayOfYear(1);
+                    Instant startOfYearInstant = startOfYear.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
+                    LocalDate endOfYear = startOfYear.plusMonths(12).minusDays(1);
+                    Instant endOfYearInstant = endOfYear.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant();
+                    transactions = transactions.stream()
+                        .filter(t -> t.getCreatedAt().isAfter(startOfYearInstant) && t.getCreatedAt().isBefore(endOfYearInstant))
+                        .toList();
+                    break;
+
+                case "custom":
+                    if (startDate != null && endDate != null) {
+                        Instant startInstant = LocalDate.parse(startDate).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
+                        Instant endInstant = LocalDate.parse(endDate).atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant();
+                        if (startInstant.isAfter(endInstant)) {
+                            throw new IllegalArgumentException("Start date cannot be after end date");
+                        }
+                        transactions = transactions.stream()
+                            .filter(t -> t.getCreatedAt().isAfter(startInstant) && t.getCreatedAt().isBefore(endInstant))
+                            .toList();
+                    } else {
+                        throw new IllegalArgumentException("Both startDate and endDate must be provided for custom period");
+                    }
+                    break;
+
+                default:
+                    break;
             }
         }
 
@@ -193,6 +243,8 @@ public class TransactionService {
             dto.setTypeName(transaction.getType().getName());
         }
         dto.setNote(transaction.getNote());
+
+        dto.setTransactionDate(transaction.getTransactionDate().toString());
 
         return dto;
     }

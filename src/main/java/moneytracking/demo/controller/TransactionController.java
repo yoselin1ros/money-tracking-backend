@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 import moneytracking.demo.dto.ApiResponse;
 import moneytracking.demo.dto.CustomUserDetails;
-import moneytracking.demo.dto.TransactionFilterDTO;
 import moneytracking.demo.dto.TransactionRequestDTO;
 import moneytracking.demo.dto.TransactionResponseDTO;
 import moneytracking.demo.service.TransactionService;
@@ -34,9 +34,12 @@ public class TransactionController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> listTransactions(
         @AuthenticationPrincipal CustomUserDetails userDetails,
-        @RequestBody TransactionFilterDTO filter
+        @RequestParam(required = false) Long categoryId,
+        @RequestParam(required = false) String period,
+        @RequestParam(required = false) String startDate,
+        @RequestParam(required = false) String endDate
     ) {
-        List<TransactionResponseDTO> userTransactions = transactionService.listTransactions(userDetails.getId(), filter);
+        List<TransactionResponseDTO> userTransactions = transactionService.listTransactions(userDetails.getId(), categoryId, period, startDate, endDate);
         ApiResponse<List<TransactionResponseDTO>> response = new ApiResponse<List<TransactionResponseDTO>>(
             true, "Transactions retrieved successfully", userTransactions
         );

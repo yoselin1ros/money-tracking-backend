@@ -11,7 +11,7 @@ public class FrequentExpenseRequestDTO {
     private String name;
 
     @NotNull(message = "Amount is a required field")
-    @Min(value = 1, message = "Ammount must be higuer than zero")
+    @Min(value = 1, message = "Amount must be higuer than zero")
     private BigDecimal amount;
 
     public Long getUserId() {

@@ -46,7 +46,7 @@ public class UserEntity {
     private boolean emailVerified;
 
     @Column(name = "failed_login_attempts")
-    private Integer failedLoginAttempts;
+    private Integer failedLoginAttempts = 0;
 
     @Column(name = "locked_until")
     private LocalDateTime lockedUntil;

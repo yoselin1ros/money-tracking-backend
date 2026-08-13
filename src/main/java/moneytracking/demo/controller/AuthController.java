@@ -1,8 +1,10 @@
 package moneytracking.demo.controller;
 
+import java.time.format.DateTimeFormatter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 import moneytracking.demo.entity.UserEntity;
+import moneytracking.demo.exception.UnauthorizedException;
 import moneytracking.demo.security.JwtUtil;
 import moneytracking.demo.service.AuthService;
 import moneytracking.demo.service.CategoryService;
@@ -47,32 +50,61 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> authenticateUser(@RequestBody UserRequestDTO user) {
-        Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                user.getEmail(),
-                user.getPassword()
-            )
-        );
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String jwt = jwtUtils.generateToken(userDetails.getUsername());
+        // Checking if user has been locked out
+        UserEntity userEntity = authService.findByEmail(user.getEmail());
+        if (userEntity != null) {
+            if (authService.isAccountLocked(userEntity)) {
+                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+                String formattedTime = userEntity.getLockedUntil().format(timeFormatter);
+                throw new LockedException("Too many failed attempts. Locked until: " + formattedTime);
+            }
+        }
 
-        UserResponseDTO userResponse = profileService.getUserByEmail(userDetails.getUsername());
-        
-        LoginResponse loginResponse = new LoginResponse();
-        loginResponse.setAccessToken(jwt);
-        loginResponse.setTokenType("Bearer");
-        loginResponse.setExpiresIn(3600); // time in seconds
-        loginResponse.setUser(userResponse);
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    user.getEmail(),
+                    user.getPassword()
+                )
+            );
 
-        ApiResponse<LoginResponse> response = new ApiResponse<>(true, "User logged in successfully!", loginResponse);
-        return ResponseEntity.ok(response);
+            authService.resetFailedAttempts(userEntity); // Reset failed attempts on successful login
+
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String jwt = jwtUtils.generateToken(userDetails.getUsername());
+
+            UserResponseDTO userResponse = profileService.getUserByEmail(userDetails.getUsername());
+            
+            LoginResponse loginResponse = new LoginResponse();
+            loginResponse.setAccessToken(jwt);
+            loginResponse.setTokenType("Bearer");
+            loginResponse.setExpiresIn(3600); // time in seconds
+            loginResponse.setUser(userResponse);
+
+            ApiResponse<LoginResponse> response = new ApiResponse<>(true, "User logged in successfully!", loginResponse);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception ex) {
+            if (userEntity != null) {
+                authService.processFailedLogin(userEntity);
+                if (authService.isAccountLocked(userEntity)) {
+                    throw new LockedException("Account has been locked for 15 minutes due to consecutive invalid entries. Please try again later.");
+                }
+            }
+            // If authentication fails, return 401 Unauthorized
+            throw new UnauthorizedException("Invalid email or password.");
+        }
     }
+
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<String>> registerUser(@Valid @RequestBody UserRequestDTO request) {
         UserEntity newUser = authService.registerUser(request);
         if (newUser != null) {
             Boolean defaultCategoriesCreated = categoryService.createDefaultCategoriesForUser(newUser);
-            // TODO: Handle the case where default categories creation fails, if necessary
+            if (defaultCategoriesCreated == null || !defaultCategoriesCreated) {
+                authService.deleteUser(newUser); // Rollback user creation if default categories fail
+                throw new RuntimeException("Failed to create default categories for the user.");
+            }
         }
 
         ApiResponse<String> response = new ApiResponse<>(true, "User registered successfully!", null);

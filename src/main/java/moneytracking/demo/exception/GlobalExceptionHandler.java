@@ -8,6 +8,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -66,6 +67,29 @@ public class GlobalExceptionHandler {
         body.put("status", HttpStatus.CONFLICT.value());
 
         return new ResponseEntity<>(body, HttpStatus.CONFLICT);
+    }
+
+    // throwing 423 locked when the account is locked due to too many failed login attempts
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccountLocked(LockedException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "Locked");
+        response.put("message", ex.getMessage());
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", HttpStatus.LOCKED.value());
+        return new ResponseEntity<>(response, HttpStatus.LOCKED);
+    }
+
+    // handling 401 Unauthorized when the user is not authenticated
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorized(UnauthorizedException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.UNAUTHORIZED.value());
+        body.put("error", "Unauthorized");
+        body.put("message", ex.getMessage());
+
+        return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(Exception.class) // fallback for all exceptions

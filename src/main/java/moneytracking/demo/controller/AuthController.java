@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import moneytracking.demo.entity.UserEntity;
 import moneytracking.demo.exception.UnauthorizedException;
@@ -81,6 +83,9 @@ public class AuthController {
             loginResponse.setExpiresIn(3600); // time in seconds
             loginResponse.setUser(userResponse);
 
+            // creating session for the user
+            authService.createSession(userEntity, jwt, "", "");
+
             ApiResponse<LoginResponse> response = new ApiResponse<>(true, "User logged in successfully!", loginResponse);
             return ResponseEntity.ok(response);
             
@@ -110,4 +115,12 @@ public class AuthController {
         ApiResponse<String> response = new ApiResponse<>(true, "User registered successfully!", null);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
+    // sessions
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Boolean>> logoutUser(HttpServletRequest request,
+                                                       HttpServletResponse response) {
+        return authService.logout(request, response);
+    }
+
 }

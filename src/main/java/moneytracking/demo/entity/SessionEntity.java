@@ -4,9 +4,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,14 +19,13 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "sessions", schema = "migrations")
 public class SessionEntity {
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
     
-    // @Column(name = "user_id", nullable = false)
-    // private Integer userId;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id") // Creates user_id foreign key column
     private UserEntity user;
@@ -36,7 +37,7 @@ public class SessionEntity {
     private String deviceId;
 
     @Column(name = "device_name", nullable = false)
-    private String device_name;
+    private String deviceName;
 
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
@@ -82,12 +83,12 @@ public class SessionEntity {
         this.deviceId = deviceId;
     }
 
-    public String getDevice_name() {
-        return device_name;
+    public String getDeviceName() {
+        return deviceName;
     }
 
-    public void setDevice_name(String device_name) {
-        this.device_name = device_name;
+    public void setDeviceName(String deviceName) {
+        this.deviceName = deviceName;
     }
 
     public Instant getExpiresAt() {
@@ -125,7 +126,7 @@ public class SessionEntity {
     @Override
     public String toString() {
         return "SessionEntity [id=" + id + ", user=" + user + ", tokenHash=" + tokenHash + ", deviceId=" + deviceId
-                + ", device_name=" + device_name + ", expiresAt=" + expiresAt + ", createdAt=" + createdAt
+                + ", deviceName=" + deviceName + ", expiresAt=" + expiresAt + ", createdAt=" + createdAt
                 + ", revoked=" + revoked + ", lastActivityAt=" + lastActivityAt + "]";
     }
 

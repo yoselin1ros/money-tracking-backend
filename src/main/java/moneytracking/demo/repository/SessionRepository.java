@@ -6,4 +6,6 @@ import moneytracking.demo.entity.SessionEntity;
 
 public interface SessionRepository extends JpaRepository<SessionEntity, Long> {
 
+    SessionEntity findByTokenHash(String tokenHash);
+    
 }

@@ -36,13 +36,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         try {
             String jwt = parseJwt(request);
-            // checking token is not revoked
-            SessionEntity session = sessionRepository.findByTokenHash(DigestUtils.md5DigestAsHex(jwt.getBytes()));
-            if (session == null || session.isRevoked() || session.getExpiresAt().isBefore(Instant.now())) {
-                throw new UnauthorizedException("Session is revoked or expired");
-            }
 
             if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
+                // checking token is not revoked
+                SessionEntity session = sessionRepository.findByTokenHash(DigestUtils.md5DigestAsHex(jwt.getBytes()));
+                if (session == null || session.isRevoked() || session.getExpiresAt().isBefore(Instant.now())) {
+                    throw new UnauthorizedException("Session is revoked or expired");
+                }
+                
                 String username = jwtUtils.getUsernameFromToken(jwt);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 UsernamePasswordAuthenticationToken authentication =

@@ -17,6 +17,8 @@ import org.springframework.util.DigestUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import moneytracking.demo.dto.ApiResponse;
+import moneytracking.demo.dto.CustomUserDetails;
+import moneytracking.demo.dto.PasswordChangeRequestDTO;
 import moneytracking.demo.dto.UserRequestDTO;
 import moneytracking.demo.entity.SessionEntity;
 import moneytracking.demo.entity.UserEntity;
@@ -157,5 +159,29 @@ public class AuthService {
             throw new UnauthorizedException("User does not exist.");
         }
 
+    }
+
+    // password management
+    @Transactional
+    public void changePassword(PasswordChangeRequestDTO request) {
+        Authentication currentUser = SecurityContextHolder.getContext().getAuthentication();
+        if (currentUser != null && currentUser.isAuthenticated()
+            && currentUser.getPrincipal() instanceof CustomUserDetails userDetails) {
+            
+        } else {
+            throw new SecurityException("Authentication information is missing or invalid");
+        }
+
+        if (!request.getNewPassword().equals(request.getRepeatNewPassword())) {
+            throw new IllegalArgumentException("New password and repeat new password do not match.");
+        }
+        UserEntity user = userRepository.findByEmail(userDetails.getUsername());
+
+        if (!encoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is incorrect.");
+        }
+
+        user.setPasswordHash(encoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 }

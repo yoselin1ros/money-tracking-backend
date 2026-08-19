@@ -9,6 +9,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +25,7 @@ import moneytracking.demo.service.CategoryService;
 import moneytracking.demo.service.ProfileService;
 import moneytracking.demo.dto.ApiResponse;
 import moneytracking.demo.dto.LoginResponse;
+import moneytracking.demo.dto.PasswordChangeRequestDTO;
 import moneytracking.demo.dto.UserRequestDTO;
 import moneytracking.demo.dto.UserResponseDTO;
 
@@ -121,6 +123,15 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Boolean>> logoutUser(HttpServletRequest request,
                                                        HttpServletResponse response) {
         return authService.logout(request, response);
+    }
+
+    // pasword management
+    @PutMapping("/password")
+    public ResponseEntity<ApiResponse<String>> changePassword(@RequestBody PasswordChangeRequestDTO request) {
+        authService.changePassword(request);
+
+        ApiResponse<String> response = new ApiResponse<>(true, "Password changed successfully!", null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
 }

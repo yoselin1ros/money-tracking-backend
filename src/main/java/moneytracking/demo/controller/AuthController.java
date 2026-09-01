@@ -24,8 +24,10 @@ import moneytracking.demo.service.AuthService;
 import moneytracking.demo.service.CategoryService;
 import moneytracking.demo.service.ProfileService;
 import moneytracking.demo.dto.ApiResponse;
+import moneytracking.demo.dto.ForgotPasswordRequestDTO;
 import moneytracking.demo.dto.LoginResponse;
 import moneytracking.demo.dto.PasswordChangeRequestDTO;
+import moneytracking.demo.dto.ResetPasswordRequestDTO;
 import moneytracking.demo.dto.UserRequestDTO;
 import moneytracking.demo.dto.UserResponseDTO;
 
@@ -125,12 +127,28 @@ public class AuthController {
         return authService.logout(request, response);
     }
 
-    // pasword management
+    // password management
     @PutMapping("/password")
-    public ResponseEntity<ApiResponse<String>> changePassword(@RequestBody PasswordChangeRequestDTO request) {
+    public ResponseEntity<ApiResponse<String>> changePassword(@Valid @RequestBody PasswordChangeRequestDTO request) {
         authService.changePassword(request);
 
         ApiResponse<String> response = new ApiResponse<>(true, "Password changed successfully!", null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDTO request) {
+        String email = request.getEmail();
+        authService.forgotPassword(email);
+        
+        ApiResponse<String> response = new ApiResponse<>(true, "Password reset link sent to your email", null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<String>> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO request) {
+        authService.resetPassword(request);
+        ApiResponse<String> response = new ApiResponse<>(true, "Password successfully updated!", null);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

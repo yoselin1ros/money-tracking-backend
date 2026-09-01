@@ -4,9 +4,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,10 +19,13 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "password_reset_tokens", schema = "migrations")
 public class PasswordResetTokenEntity {
+    private static final int EXPIRATION_MINUTES = 60; // Token expires in 60 minutes
+
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -39,6 +44,16 @@ public class PasswordResetTokenEntity {
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
+
+    public PasswordResetTokenEntity() {
+        // Default constructor for JPA
+    }
+
+    public PasswordResetTokenEntity(String tokenHash, UserEntity user) {
+        this.tokenHash = tokenHash;
+        this.user = user;
+        this.expiresAt = Instant.now().plus(EXPIRATION_MINUTES, ChronoUnit.MINUTES);
+    }
 
     public Long getId() {
         return id;

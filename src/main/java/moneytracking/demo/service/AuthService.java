@@ -3,6 +3,7 @@ package moneytracking.demo.service;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +20,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import moneytracking.demo.dto.ApiResponse;
 import moneytracking.demo.dto.CustomUserDetails;
 import moneytracking.demo.dto.PasswordChangeRequestDTO;
+import moneytracking.demo.dto.ResetPasswordRequestDTO;
 import moneytracking.demo.dto.UserRequestDTO;
+import moneytracking.demo.entity.PasswordResetTokenEntity;
 import moneytracking.demo.entity.SessionEntity;
 import moneytracking.demo.entity.UserEntity;
 import moneytracking.demo.exception.UnauthorizedException;
+import moneytracking.demo.repository.PasswordResetTokenRepository;
 import moneytracking.demo.repository.SessionRepository;
 import moneytracking.demo.repository.UserRepository;
 
@@ -31,14 +35,21 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder encoder;
     private final SessionRepository sessionRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailService emailService;
 
     private static final int MAX_FAILED_ATTEMPTS = 5;
     private static final int LOCK_DURATION_MINUTES = 15;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder encoder, SessionRepository sessionRepository) {
+    public AuthService(
+        UserRepository userRepository, PasswordEncoder encoder, SessionRepository sessionRepository, 
+        PasswordResetTokenRepository passwordResetTokenRepository, EmailService emailService
+    ) {
         this.userRepository = userRepository;
         this.encoder = encoder;
         this.sessionRepository = sessionRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.emailService = emailService;
     }
 
     public UserEntity registerUser(UserRequestDTO user) {
@@ -183,5 +194,50 @@ public class AuthService {
 
         user.setPasswordHash(encoder.encode(request.getNewPassword()));
         userRepository.save(user);
+    }
+
+    @Transactional
+    public void forgotPassword(String email) {
+        UserEntity user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new IllegalArgumentException("User with the provided email does not exist.");
+        }
+
+        // Clean up any existing tokens for this user before creating a new one
+        passwordResetTokenRepository.deleteByUser(user);
+
+        String token = UUID.randomUUID().toString();
+        PasswordResetTokenEntity resetToken = new PasswordResetTokenEntity(token, user);
+        passwordResetTokenRepository.save(resetToken);
+
+        emailService.sendSimpleEmail(
+            user.getEmail(), 
+            "Password Reset Request", 
+            "Click the link to reset your password: https://yourfrontend.com/reset-password?token=" + token
+        );
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequestDTO request) {
+        PasswordResetTokenEntity resetToken = passwordResetTokenRepository.findByTokenHash(request.getToken());
+        if (resetToken == null) {
+            throw new RuntimeException("Invalid token");
+        }
+
+        if (!request.getNewPassword().equals(request.getRepeatNewPassword())) {
+            throw new IllegalArgumentException("New password and repeat new password do not match.");
+        }
+
+        if (resetToken.getExpiresAt().isBefore(Instant.now())) {
+            passwordResetTokenRepository.delete(resetToken);
+            throw new RuntimeException("Token has expired");
+        }
+
+        UserEntity user = resetToken.getUser();
+        user.setPasswordHash(encoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        
+        // Burn token after single use
+        passwordResetTokenRepository.delete(resetToken); 
     }
 }

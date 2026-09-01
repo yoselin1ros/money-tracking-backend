@@ -4,9 +4,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,10 +19,11 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "email_verification_tokens", schema = "migrations")
 public class EmailVerificationTokenEntity {
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -39,6 +42,15 @@ public class EmailVerificationTokenEntity {
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
+
+    public EmailVerificationTokenEntity() {
+        // Default constructor for JPA
+    }
+
+    public EmailVerificationTokenEntity(String tokenHash, UserEntity user) {
+        this.tokenHash = tokenHash;
+        this.user = user;
+    }
 
     public Long getId() {
         return id;
@@ -96,8 +108,8 @@ public class EmailVerificationTokenEntity {
     
     @PrePersist
     protected void calculateExpiry() {
-        // Automatically sets expiration to 30 days after the current time
-        this.expiresAt = Instant.now().plus(30, ChronoUnit.DAYS);
+        // Automatically sets expiration to 1 day after the current time
+        this.expiresAt = Instant.now().plus(1, ChronoUnit.DAYS);
     }
     
 }

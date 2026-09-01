@@ -1,13 +1,20 @@
 package moneytracking.demo.controller;
 
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,10 +31,12 @@ import moneytracking.demo.service.AuthService;
 import moneytracking.demo.service.CategoryService;
 import moneytracking.demo.service.ProfileService;
 import moneytracking.demo.dto.ApiResponse;
+import moneytracking.demo.dto.CustomUserDetails;
 import moneytracking.demo.dto.ForgotPasswordRequestDTO;
 import moneytracking.demo.dto.LoginResponse;
 import moneytracking.demo.dto.PasswordChangeRequestDTO;
 import moneytracking.demo.dto.ResetPasswordRequestDTO;
+import moneytracking.demo.dto.SessionResponseDTO;
 import moneytracking.demo.dto.UserRequestDTO;
 import moneytracking.demo.dto.UserResponseDTO;
 
@@ -113,6 +122,8 @@ public class AuthController {
             if (defaultCategoriesCreated == null || !defaultCategoriesCreated) {
                 authService.deleteUser(newUser); // Rollback user creation if default categories fail
                 throw new RuntimeException("Failed to create default categories for the user.");
+            } else {
+                authService.sendVerificationEmail(newUser.getEmail()); // Send verification email after successful registration
             }
         }
 
@@ -149,6 +160,49 @@ public class AuthController {
     public ResponseEntity<ApiResponse<String>> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO request) {
         authService.resetPassword(request);
         ApiResponse<String> response = new ApiResponse<>(true, "Password successfully updated!", null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    // email verification
+    @PostMapping("/verify-email")
+    public ResponseEntity<ApiResponse<String>> verifyEmail(@RequestBody Map<String, String> request) {
+        authService.verifyEmail(request.get("token"));
+        ApiResponse<String> response = new ApiResponse<>(true, "Email successfully verified!", null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @PostMapping("/resend-verification-email")
+    public ResponseEntity<ApiResponse<String>> resendVerificationEmail(@Valid @RequestBody Map<String, String> request) {
+        authService.sendVerificationEmail(request.get("email"));
+        ApiResponse<String> response = new ApiResponse<>(true, "Verification email resent successfully!", null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    // sessions management
+    @GetMapping("/sessions")
+    public ResponseEntity<ApiResponse<List<SessionResponseDTO>>> listSessions(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<SessionResponseDTO> userSessions = authService.listSessions(userDetails.getId());
+        ApiResponse<List<SessionResponseDTO>> response = new ApiResponse<List<SessionResponseDTO>>(
+            true, "Sessions retrieved successfully", userSessions
+        );
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/sessions/")
+    public ResponseEntity<ApiResponse<Boolean>> revokeAllOtherSessions(@AuthenticationPrincipal CustomUserDetails userDetails,
+        @PathVariable Long id
+    ) {
+        Boolean revoked = authService.revokeAllOtherSessions(userDetails.getId());
+        ApiResponse<Boolean> response = new ApiResponse<>(true, "Other sessions were revoked successfully", revoked);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/sessions/{id}")
+    public ResponseEntity<ApiResponse<Boolean>> revokeSession(@AuthenticationPrincipal CustomUserDetails userDetails,
+        @PathVariable Long id
+    ) {
+        Boolean revoked = authService.revokeSession(userDetails.getId(), id);
+        ApiResponse<Boolean> response = new ApiResponse<>(true, "Session revoked successfully", revoked);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

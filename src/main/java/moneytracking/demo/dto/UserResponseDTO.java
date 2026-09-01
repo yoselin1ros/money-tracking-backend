@@ -6,6 +6,7 @@ public class UserResponseDTO {
     private String displayName;
     private String preferredCurrency;
     private boolean emailVerified;
+    private String themePreference;
 
     public Long getId() {
         return id;
@@ -47,10 +48,19 @@ public class UserResponseDTO {
         this.emailVerified = emailVerified;
     }
 
+    public String getThemePreference() {
+        return themePreference;
+    }
+
+    public void setThemePreference(String themePreference) {
+        this.themePreference = themePreference;
+    }
+
     @Override
     public String toString() {
         return "UserResponseDTO [id=" + id + ", email=" + email + ", displayName=" + displayName
-                + ", preferredCurrency=" + preferredCurrency + ", emailVerified=" + emailVerified + "]";
+                + ", preferredCurrency=" + preferredCurrency + ", emailVerified=" + emailVerified + ", themePreference="
+                + themePreference + "]";
     }
 
 }

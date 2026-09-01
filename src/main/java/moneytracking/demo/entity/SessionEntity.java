@@ -3,6 +3,8 @@ package moneytracking.demo.entity;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -23,9 +25,9 @@ import jakarta.persistence.Table;
 @Table(name = "sessions", schema = "migrations")
 public class SessionEntity {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id") // Creates user_id foreign key column
     private UserEntity user;
@@ -38,6 +40,11 @@ public class SessionEntity {
 
     @Column(name = "device_name", nullable = false)
     private String deviceName;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "platform_ref_item_id", nullable = true)
+    @NotFound(action = NotFoundAction.IGNORE)
+    private RefItemEntity platform;
 
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
@@ -91,6 +98,14 @@ public class SessionEntity {
         this.deviceName = deviceName;
     }
 
+    public RefItemEntity getPlatform() {
+        return platform;
+    }
+
+    public void setPlatform(RefItemEntity platform) {
+        this.platform = platform;
+    }
+
     public Instant getExpiresAt() {
         return expiresAt;
     }
@@ -126,8 +141,8 @@ public class SessionEntity {
     @Override
     public String toString() {
         return "SessionEntity [id=" + id + ", user=" + user + ", tokenHash=" + tokenHash + ", deviceId=" + deviceId
-                + ", deviceName=" + deviceName + ", expiresAt=" + expiresAt + ", createdAt=" + createdAt
-                + ", revoked=" + revoked + ", lastActivityAt=" + lastActivityAt + "]";
+                + ", deviceName=" + deviceName + ", platform=" + platform + ", expiresAt=" + expiresAt + ", createdAt="
+                + createdAt + ", revoked=" + revoked + ", lastActivityAt=" + lastActivityAt + "]";
     }
 
     @PrePersist

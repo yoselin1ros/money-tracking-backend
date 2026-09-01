@@ -15,7 +15,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
@@ -107,12 +106,6 @@ public class PasswordResetTokenEntity {
     public String toString() {
         return "PasswordResetTokenEntity [id=" + id + ", user=" + user + ", tokenHash=" + tokenHash + ", expiresAt="
                 + expiresAt + ", usedAt=" + usedAt + ", createdAt=" + createdAt + "]";
-    }
-
-    @PrePersist
-    protected void calculateExpiry() {
-        // Automatically sets expiration to 30 days after the current time
-        this.expiresAt = Instant.now().plus(30, ChronoUnit.DAYS);
-    }    
+    }  
     
 }

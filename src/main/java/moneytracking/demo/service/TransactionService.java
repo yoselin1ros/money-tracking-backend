@@ -32,14 +32,16 @@ public class TransactionService {
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
+    private final BudgetService budgetService;
     public TransactionService(
         TransactionRepository transactionRepository, UserRepository userRepository, AccountRepository accountRepository, 
-        CategoryRepository categoryRepository, RefItemRepository refItemRepository
+        CategoryRepository categoryRepository, RefItemRepository refItemRepository, BudgetService budgetService
     ) {
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
         this.categoryRepository = categoryRepository;
+        this.budgetService = budgetService;
     }
 
     @Transactional(readOnly = true)
@@ -150,6 +152,10 @@ public class TransactionService {
         transaction.setNote(request.getNote());
 
         TransactionEntity savedTransaction = transactionRepository.save(transaction);
+
+        // evaluating budgets after creating a transaction
+        budgetService.evaluateBudgets(user.getId(), category.getId());
+
         return mapToResponseDTO(savedTransaction);
     }
 
@@ -196,6 +202,10 @@ public class TransactionService {
         transaction.setNote(request.getNote());
 
         TransactionEntity savedTransaction = transactionRepository.save(transaction);
+
+        // evaluating budgets after updating a transaction
+        budgetService.evaluateBudgets(userDetails.getId(), category.getId());
+
         return mapToResponseDTO(savedTransaction);
     }
 
@@ -223,6 +233,10 @@ public class TransactionService {
         }
 
         transactionRepository.delete(transaction);
+
+        // evaluating budgets after deleting a transaction
+        budgetService.evaluateBudgets(userDetails.getId(), transaction.getCategory().getId());
+
         return true;
     }
 

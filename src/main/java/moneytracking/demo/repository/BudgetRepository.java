@@ -8,4 +8,6 @@ import moneytracking.demo.entity.BudgetEntity;
 
 public interface BudgetRepository extends JpaRepository<BudgetEntity, Long> {
     List<BudgetEntity> findByUserIdOrderByIdAsc(Long userId);
+
+    List<BudgetEntity> findByUserIdAndCategoryIdOrderByIdAsc(Long userId, Long categoryId);
 }

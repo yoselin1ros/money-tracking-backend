@@ -1,5 +1,6 @@
 package moneytracking.demo.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -15,11 +16,13 @@ import moneytracking.demo.dto.CustomUserDetails;
 import moneytracking.demo.entity.BudgetEntity;
 import moneytracking.demo.entity.CategoryEntity;
 import moneytracking.demo.entity.RefItemEntity;
+import moneytracking.demo.entity.TransactionEntity;
 import moneytracking.demo.entity.UserEntity;
 import moneytracking.demo.exception.ResourceNotFoundException;
 import moneytracking.demo.repository.BudgetRepository;
 import moneytracking.demo.repository.CategoryRepository;
 import moneytracking.demo.repository.RefItemRepository;
+import moneytracking.demo.repository.TransactionRepository;
 import moneytracking.demo.repository.UserRepository;
 
 @Service
@@ -28,17 +31,20 @@ public class BudgetService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final RefItemRepository refItemRepository;
+    private final TransactionRepository transactionRepository;
 
     public BudgetService(
         BudgetRepository budgetRepository,
         UserRepository userRepository,
         CategoryRepository categoryRepository,
-        RefItemRepository refItemRepository
+        RefItemRepository refItemRepository,
+        TransactionRepository transactionRepository
     ) {
         this.budgetRepository = budgetRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
         this.refItemRepository = refItemRepository;
+        this.transactionRepository = transactionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -115,6 +121,35 @@ public class BudgetService {
 
         budgetRepository.delete(budget);
         return true;
+    }
+
+    @Transactional
+    public void evaluateBudgets(Long userId, Long categoryId) {
+
+        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
+        
+        BigDecimal totalSpendingLimit = budgetRepository.findByUserIdAndCategoryIdOrderByIdAsc(userId, categoryId)
+            .stream()
+            .filter(b -> b.getPeriodStart().equals(startOfMonth) && b.getPeriodEnd().isEqual(endOfMonth))
+            .map(BudgetEntity::getSpendingLimit)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        System.out.println("totalSpendingLimit: " + totalSpendingLimit);
+
+        BigDecimal totalAmountTransactions = transactionRepository.findByUserIdAndCategoryIdOrderByIdAsc(userId, categoryId)
+            .stream()
+            .filter(t -> (t.getTransactionDate().isAfter(startOfMonth) || t.getTransactionDate().equals(startOfMonth)) && 
+                (t.getTransactionDate().isBefore(endOfMonth) || t.getTransactionDate().equals(endOfMonth)))
+            .map(TransactionEntity::getAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        System.out.println("totalAmountTransactions: " + totalAmountTransactions);
+
+        BigDecimal threshold = totalSpendingLimit.multiply(BigDecimal.valueOf(0.8)); // Set threshold at 80% of the spending limit
+        System.out.println("threshold: " + threshold);
+        if (totalAmountTransactions.compareTo(totalSpendingLimit) > 0 || totalAmountTransactions.compareTo(threshold) > 0) {
+            System.out.println("Budget exceeded for userId: " + userId + ", categoryId: " + categoryId);
+            // TODO: Implement your logic for handling budget exceedance here
+        }
     }
 
 }

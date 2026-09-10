@@ -13,10 +13,10 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "history_logs", schema = "migrations")
+@Table(name = "history_log", schema = "migrations")
 public class HistoryLogEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -28,20 +28,20 @@ public class HistoryLogEntity {
     private RefItemEntity objectType;
 
     @Column(name = "object_id", nullable = false)
-    private Integer object_id;
+    private Long objectId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "action_ref_item_id")
     private RefItemEntity action;
 
-    @Column(name = "previous_value")
+    @Column(name = "previous_value", columnDefinition = "CHARACTER VARYING(255)")
     private String previousValue;
 
-    @Column(name = "new_value")
+    @Column(name = "new_value", columnDefinition = "CHARACTER VARYING(255)")
     private String newValue;
 
     @Column(name = "occurred_at")
-    private Instant occurredAt;
+    private Instant occurredAt = Instant.now(); // Default to current timestamp
 
     public Long getId() {
         return id;
@@ -67,12 +67,12 @@ public class HistoryLogEntity {
         this.objectType = objectType;
     }
 
-    public Integer getObject_id() {
-        return object_id;
+    public Long getObjectId() {
+        return objectId;
     }
 
-    public void setObject_id(Integer object_id) {
-        this.object_id = object_id;
+    public void setObjectId(Long objectId) {
+        this.objectId = objectId;
     }
 
     public RefItemEntity getAction() {
@@ -109,8 +109,8 @@ public class HistoryLogEntity {
 
     @Override
     public String toString() {
-        return "HistoryLogEntity [id=" + id + ", user=" + user + ", objectType=" + objectType + ", object_id="
-                + object_id + ", action=" + action + ", previousValue=" + previousValue + ", newValue=" + newValue
+        return "HistoryLogEntity [id=" + id + ", user=" + user + ", objectType=" + objectType + ", objectId="
+                + objectId + ", action=" + action + ", previousValue=" + previousValue + ", newValue=" + newValue
                 + ", occurredAt=" + occurredAt + "]";
     }
 

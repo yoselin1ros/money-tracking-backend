@@ -11,6 +11,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import moneytracking.demo.dto.CustomUserDetails;
 import moneytracking.demo.dto.TransactionRequestDTO;
 import moneytracking.demo.dto.TransactionResponseDTO;
@@ -33,15 +36,22 @@ public class TransactionService {
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
     private final BudgetService budgetService;
+    private final HistoryService historyService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final String OBJECT_TYPE_TRANSACTION = "transaction";
+
     public TransactionService(
         TransactionRepository transactionRepository, UserRepository userRepository, AccountRepository accountRepository, 
-        CategoryRepository categoryRepository, RefItemRepository refItemRepository, BudgetService budgetService
+        CategoryRepository categoryRepository, RefItemRepository refItemRepository, BudgetService budgetService, 
+        HistoryService historyService
     ) {
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
         this.categoryRepository = categoryRepository;
         this.budgetService = budgetService;
+        this.historyService = historyService;
     }
 
     @Transactional(readOnly = true)
@@ -156,7 +166,17 @@ public class TransactionService {
         // evaluating budgets after creating a transaction
         budgetService.evaluateBudgets(user.getId(), category.getId());
 
-        return mapToResponseDTO(savedTransaction);
+        TransactionResponseDTO responseDTO = mapToResponseDTO(savedTransaction);
+
+        try { 
+            String newValue = objectMapper.writeValueAsString(responseDTO);
+            historyService.appendEntry(user.getId(), OBJECT_TYPE_TRANSACTION, savedTransaction.getId(), "CREATE", null, newValue);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
+
+        return responseDTO;
     }
 
     @Transactional
@@ -195,6 +215,8 @@ public class TransactionService {
         }
         accountRepository.save(account);
 
+        TransactionResponseDTO previousTransaction = mapToResponseDTO(transaction);
+
         transaction.setAccount(account);
         transaction.setCategory(category);
         transaction.setType(type);
@@ -206,7 +228,17 @@ public class TransactionService {
         // evaluating budgets after updating a transaction
         budgetService.evaluateBudgets(userDetails.getId(), category.getId());
 
-        return mapToResponseDTO(savedTransaction);
+        TransactionResponseDTO responseDTO = mapToResponseDTO(savedTransaction);
+
+        try {
+            String newValue = objectMapper.writeValueAsString(responseDTO);
+            String previousValue = objectMapper.writeValueAsString(previousTransaction);
+            historyService.appendEntry(userDetails.getId(), OBJECT_TYPE_TRANSACTION, savedTransaction.getId(), "UPDATE", previousValue, newValue);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
+
+        return responseDTO;
     }
 
     @Transactional
@@ -224,6 +256,7 @@ public class TransactionService {
             throw new SecurityException("Authentication information is missing or invalid");
         }
 
+        TransactionResponseDTO previousTransaction = mapToResponseDTO(transaction);
         RefItemEntity type = transaction.getType();
         AccountEntity account = transaction.getAccount();
         if (type.getName().equals("expense")) {
@@ -237,6 +270,12 @@ public class TransactionService {
         // evaluating budgets after deleting a transaction
         budgetService.evaluateBudgets(userDetails.getId(), transaction.getCategory().getId());
 
+        try { 
+            String previousValue = objectMapper.writeValueAsString(previousTransaction);
+            historyService.appendEntry(userDetails.getId(), "transaction", transactionId, "DELETE", previousValue, null);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
         return true;
     }
 

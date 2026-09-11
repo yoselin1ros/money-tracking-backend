@@ -7,6 +7,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import moneytracking.demo.dto.CustomUserDetails;
 import moneytracking.demo.dto.FrequentExpenseRequestDTO;
 import moneytracking.demo.dto.FrequentExpenseResponseDTO;
@@ -25,13 +28,19 @@ public class FrequentExpenseService {
     private final FrequentExpenseRepository frequentExpenseRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final HistoryService historyService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final String OBJECT_TYPE_FREQUENT_EXPENSE = "frequent_expense";
 
     public FrequentExpenseService(
-        FrequentExpenseRepository frequentExpenseRepository, UserRepository userRepository, CategoryRepository categoryRepository
+        FrequentExpenseRepository frequentExpenseRepository, UserRepository userRepository, 
+        CategoryRepository categoryRepository, HistoryService historyService
     ) {
         this.frequentExpenseRepository = frequentExpenseRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
+        this.historyService = historyService;
     }
 
     @Transactional(readOnly = true)
@@ -61,7 +70,18 @@ public class FrequentExpenseService {
         template.setAmount(request.getAmount());
         
         FrequentExpenseEntity savedTemplate = frequentExpenseRepository.save(template);
-        return mapToResponseDTO(savedTemplate);
+
+        FrequentExpenseResponseDTO responseDTO = mapToResponseDTO(savedTemplate);
+
+        try { 
+            String newValue = objectMapper.writeValueAsString(responseDTO);
+            historyService.appendEntry(user.getId(), OBJECT_TYPE_FREQUENT_EXPENSE, savedTemplate.getId(), "CREATE", null, newValue);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
+
+        return responseDTO;
     }
 
     @Transactional
@@ -79,6 +99,8 @@ public class FrequentExpenseService {
             throw new SecurityException("Authentication information is missing or invalid");
         }
 
+        FrequentExpenseResponseDTO previousTemplate = mapToResponseDTO(template);
+
         CategoryEntity category = categoryRepository.findById(request.getCategoryId())
             .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
@@ -87,7 +109,18 @@ public class FrequentExpenseService {
         template.setAmount(request.getAmount());
 
         FrequentExpenseEntity savedTemplate = frequentExpenseRepository.save(template);
-        return mapToResponseDTO(savedTemplate);
+
+        FrequentExpenseResponseDTO responseDTO = mapToResponseDTO(savedTemplate);
+
+        try {
+            String newValue = objectMapper.writeValueAsString(responseDTO);
+            String previousValue = objectMapper.writeValueAsString(previousTemplate);
+            historyService.appendEntry(userDetails.getId(), OBJECT_TYPE_FREQUENT_EXPENSE, savedTemplate.getId(), "UPDATE", previousValue, newValue);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
+
+        return responseDTO;
     }
 
     public Boolean deleteTemplate(Long templateId) {
@@ -104,7 +137,17 @@ public class FrequentExpenseService {
             throw new SecurityException("Authentication information is missing or invalid");
         }
 
+        FrequentExpenseResponseDTO previousTemplate = mapToResponseDTO(template);
+
         frequentExpenseRepository.delete(template);
+
+        try { 
+            String previousValue = objectMapper.writeValueAsString(previousTemplate);
+            historyService.appendEntry(userDetails.getId(), OBJECT_TYPE_FREQUENT_EXPENSE, templateId, "DELETE", previousValue, null);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
+
         return true;
     }
 

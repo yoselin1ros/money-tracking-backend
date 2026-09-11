@@ -8,6 +8,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import moneytracking.demo.dto.AccountRequestDTO;
 import moneytracking.demo.dto.AccountResponseDTO;
 import moneytracking.demo.dto.CustomUserDetails;
@@ -26,13 +29,20 @@ public class AccountService {
     private final UserRepository userRepository;
     private final RefItemRepository refItemRepository;
     private final TransactionRepository transactionRepository;
+    private final HistoryService historyService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final String OBJECT_TYPE_ACCOUNT = "account";
 
     public AccountService(
-        AccountRepository accountRepository, UserRepository userRepository, RefItemRepository refItemRepository, TransactionRepository transactionRepository) {
+        AccountRepository accountRepository, UserRepository userRepository, RefItemRepository refItemRepository, 
+        TransactionRepository transactionRepository, HistoryService historyService
+    ) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
         this.refItemRepository = refItemRepository;
         this.transactionRepository = transactionRepository;
+        this.historyService = historyService;
     }
 
     @Transactional
@@ -51,7 +61,18 @@ public class AccountService {
         account.setCurrentBalance(request.getInitialBalance());
 
         AccountEntity savedAccount = accountRepository.save(account);
-        return mapToResponseDTO(savedAccount);
+
+        AccountResponseDTO responseDTO = mapToResponseDTO(savedAccount);
+
+        try { 
+            String newValue = objectMapper.writeValueAsString(responseDTO);
+            historyService.appendEntry(user.getId(), OBJECT_TYPE_ACCOUNT, savedAccount.getId(), "CREATE", null, newValue);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
+
+        return responseDTO;
     }
 
     @Transactional
@@ -68,6 +89,8 @@ public class AccountService {
         } else {
             throw new SecurityException("Authentication information is missing or invalid");
         }
+
+        AccountResponseDTO previousAccount = mapToResponseDTO(account);
         
         account.setName(request.getName());
 
@@ -76,7 +99,18 @@ public class AccountService {
         account.setType(type);
 
         AccountEntity updatedAccount = accountRepository.save(account);
-        return mapToResponseDTO(updatedAccount);
+
+        AccountResponseDTO responseDTO = mapToResponseDTO(updatedAccount);
+
+        try {
+            String newValue = objectMapper.writeValueAsString(responseDTO);
+            String previousValue = objectMapper.writeValueAsString(previousAccount);
+            historyService.appendEntry(userDetails.getId(), OBJECT_TYPE_ACCOUNT, updatedAccount.getId(), "UPDATE", previousValue, newValue);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
+
+        return responseDTO;
     }
 
     @Transactional
@@ -94,10 +128,20 @@ public class AccountService {
             throw new SecurityException("Authentication information is missing or invalid");
         }
 
+        AccountResponseDTO previousAccount = mapToResponseDTO(account);
+
         if (transactionRepository.existsByAccountId(accountId)) {
             throw new DataIntegrityViolationException("Cannot delete account with associated transactions");
         }
         accountRepository.delete(account);
+
+        try { 
+            String previousValue = objectMapper.writeValueAsString(previousAccount);
+            historyService.appendEntry(userDetails.getId(), OBJECT_TYPE_ACCOUNT, accountId, "DELETE", previousValue, null);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
+
         return true;
     }
 

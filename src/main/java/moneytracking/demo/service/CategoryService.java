@@ -9,6 +9,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import moneytracking.demo.dto.CategoryRequestDTO;
 import moneytracking.demo.dto.CategoryResponseDTO;
 import moneytracking.demo.dto.CustomUserDetails;
@@ -27,15 +30,20 @@ public class CategoryService {
     private final UserRepository userRepository;
     private final RefItemRepository refItemRepository;
     private final TransactionRepository transactionRepository;
+    private final HistoryService historyService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final String OBJECT_TYPE_CATEGORY = "category";
 
     public CategoryService(
         CategoryRepository categoryRepository, UserRepository userRepository, RefItemRepository refItemRepository,
-        TransactionRepository transactionRepository
+            TransactionRepository transactionRepository, HistoryService historyService
     ) {
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
         this.refItemRepository = refItemRepository;
         this.transactionRepository = transactionRepository;
+        this.historyService = historyService;
     }
 
     @Transactional
@@ -61,8 +69,18 @@ public class CategoryService {
 
         CategoryEntity savedCategory = categoryRepository.save(category);
 
+        CategoryResponseDTO responseDTO = mapToResponseDTO(savedCategory);
+
+        try { 
+            String newValue = objectMapper.writeValueAsString(responseDTO);
+            historyService.appendEntry(user.getId(), OBJECT_TYPE_CATEGORY, savedCategory.getId(), "CREATE", null, newValue);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
+
         // 3. Return mapped Response DTO
-        return mapToResponseDTO(savedCategory);
+        return responseDTO;
     }
 
     @Transactional(readOnly = true)
@@ -93,6 +111,8 @@ public class CategoryService {
             throw new IllegalArgumentException("Category with the same name already exists for this user");
         }
 
+        CategoryResponseDTO previousCategory = mapToResponseDTO(category);
+
         category.setName(request.getName());
         category.setDescription(request.getDescription());
 
@@ -101,20 +121,50 @@ public class CategoryService {
         category.setType(type);
 
         CategoryEntity updatedCategory = categoryRepository.save(category);
-        return mapToResponseDTO(updatedCategory);
+
+        CategoryResponseDTO responseDTO = mapToResponseDTO(updatedCategory);
+
+        try {
+            String newValue = objectMapper.writeValueAsString(responseDTO);
+            String previousValue = objectMapper.writeValueAsString(previousCategory);
+            historyService.appendEntry(userDetails.getId(), OBJECT_TYPE_CATEGORY, updatedCategory.getId(), "UPDATE", previousValue, newValue);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
+
+        return responseDTO;
     }
 
     @Transactional
     public Boolean deleteCategory(Long categoryId) {
-        if (!categoryRepository.existsById(categoryId)) {
-            throw new ResourceNotFoundException("Category not found");
+        CategoryEntity category = categoryRepository.findById(categoryId)
+            .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+
+        Authentication currentUser = SecurityContextHolder.getContext().getAuthentication();
+        if (currentUser != null && currentUser.isAuthenticated() 
+            && currentUser.getPrincipal() instanceof CustomUserDetails userDetails) {
+            if (!category.getUser().getId().equals(userDetails.getId())) {
+                throw new SecurityException("You are not authorized to delete this category");
+            }
+        } else {
+            throw new SecurityException("Authentication information is missing or invalid");
         }
+        
+        CategoryResponseDTO previousCategory = mapToResponseDTO(category);
 
         if (transactionRepository.existByCategoryId(categoryId)) {
             throw new DataIntegrityViolationException("Cannot delete category with associated transactions");
         }
 
-        categoryRepository.deleteById(categoryId);
+        categoryRepository.delete(category);
+
+        try { 
+            String previousValue = objectMapper.writeValueAsString(previousCategory);
+            historyService.appendEntry(userDetails.getId(), OBJECT_TYPE_CATEGORY, category.getId(), "DELETE", previousValue, null);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
+
         return true;
     }
 
@@ -139,6 +189,16 @@ public class CategoryService {
             category.setDescription(defCategory.getDescription());
             category.setType(defCategory.getType());
             categoryRepository.save(category);
+
+            CategoryResponseDTO categoryDTO = mapToResponseDTO(category);
+
+            try { 
+                String newValue = objectMapper.writeValueAsString(categoryDTO);
+                historyService.appendEntry(user.getId(), OBJECT_TYPE_CATEGORY, category.getId(), "CREATE", null, newValue);
+
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("Failed to convert entity to JSON string", e);
+            }
         }
         return true;
     }

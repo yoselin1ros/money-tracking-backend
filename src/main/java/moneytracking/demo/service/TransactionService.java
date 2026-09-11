@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import moneytracking.demo.dto.AccountResponseDTO;
 import moneytracking.demo.dto.CustomUserDetails;
 import moneytracking.demo.dto.TransactionRequestDTO;
 import moneytracking.demo.dto.TransactionResponseDTO;
@@ -40,6 +41,7 @@ public class TransactionService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String OBJECT_TYPE_TRANSACTION = "transaction";
+    private static final String OBJECT_TYPE_ACCOUNT = "account";
 
     public TransactionService(
         TransactionRepository transactionRepository, UserRepository userRepository, AccountRepository accountRepository, 
@@ -142,6 +144,8 @@ public class TransactionService {
         
         RefItemEntity type = category.getType(); // Assuming the type is derived from the category
 
+        AccountResponseDTO previousAccount = account.mapToResponseDTO(account);
+
         // Checking/updating amount in account for expense transactions
         if (account.getCurrentBalance().compareTo(request.getAmount()) < 0 && type.getName().equals("expense")) {
             throw new IllegalArgumentException("Insufficient funds in the account for this transaction");
@@ -152,6 +156,16 @@ public class TransactionService {
             account.setCurrentBalance(account.getCurrentBalance().add(request.getAmount()));
         }
         accountRepository.save(account);
+
+        AccountResponseDTO updatedAccount = account.mapToResponseDTO(account);
+
+        try {
+            String newValueAccount = objectMapper.writeValueAsString(updatedAccount);
+            String previousValueAccount = objectMapper.writeValueAsString(previousAccount);
+            historyService.appendEntry(user.getId(), OBJECT_TYPE_ACCOUNT, updatedAccount.getId(), "UPDATE", previousValueAccount, newValueAccount);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
         
         TransactionEntity transaction = new TransactionEntity();
         transaction.setUser(user);
@@ -202,6 +216,8 @@ public class TransactionService {
 
         RefItemEntity type = category.getType(); // Assuming the type is derived from the category
 
+        AccountResponseDTO previousAccount = account.mapToResponseDTO(account);
+
         // Checking/updating amount in account for expense transactions
         if (account.getCurrentBalance().compareTo(request.getAmount()) < 0 && type.getName().equals("expense")) {
             throw new IllegalArgumentException("Insufficient funds in the account for this transaction");
@@ -214,6 +230,16 @@ public class TransactionService {
             account.setCurrentBalance(account.getCurrentBalance().add(request.getAmount()));
         }
         accountRepository.save(account);
+
+        AccountResponseDTO updatedAccount = account.mapToResponseDTO(account);
+
+        try {
+            String newValueAccount = objectMapper.writeValueAsString(updatedAccount);
+            String previousValueAccount = objectMapper.writeValueAsString(previousAccount);
+            historyService.appendEntry(userDetails.getId(), OBJECT_TYPE_ACCOUNT, updatedAccount.getId(), "UPDATE", previousValueAccount, newValueAccount);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
 
         TransactionResponseDTO previousTransaction = mapToResponseDTO(transaction);
 
@@ -259,10 +285,24 @@ public class TransactionService {
         TransactionResponseDTO previousTransaction = mapToResponseDTO(transaction);
         RefItemEntity type = transaction.getType();
         AccountEntity account = transaction.getAccount();
+
+        AccountResponseDTO previousAccount = account.mapToResponseDTO(account);
+
         if (type.getName().equals("expense")) {
             account.setCurrentBalance(account.getCurrentBalance().add(transaction.getAmount())); // Revert previous amount
         } else if (type.getName().equals("income")) {
             account.setCurrentBalance(account.getCurrentBalance().subtract(transaction.getAmount())); // Revert previous amount
+        }
+        accountRepository.save(account);
+        
+        AccountResponseDTO updatedAccount = account.mapToResponseDTO(account);
+
+        try {
+            String newValueAccount = objectMapper.writeValueAsString(updatedAccount);
+            String previousValueAccount = objectMapper.writeValueAsString(previousAccount);
+            historyService.appendEntry(userDetails.getId(), OBJECT_TYPE_ACCOUNT, updatedAccount.getId(), "UPDATE", previousValueAccount, newValueAccount);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
         }
 
         transactionRepository.delete(transaction);

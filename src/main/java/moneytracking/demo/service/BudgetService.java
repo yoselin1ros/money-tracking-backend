@@ -10,6 +10,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import moneytracking.demo.dto.BudgetRequestDTO;
 import moneytracking.demo.dto.BudgetResponseDTO;
 import moneytracking.demo.dto.CustomUserDetails;
@@ -32,19 +35,25 @@ public class BudgetService {
     private final CategoryRepository categoryRepository;
     private final RefItemRepository refItemRepository;
     private final TransactionRepository transactionRepository;
+    private final HistoryService historyService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final String OBJECT_TYPE_BUDGET = "budget";
 
     public BudgetService(
         BudgetRepository budgetRepository,
         UserRepository userRepository,
         CategoryRepository categoryRepository,
         RefItemRepository refItemRepository,
-        TransactionRepository transactionRepository
+        TransactionRepository transactionRepository,
+        HistoryService historyService
     ) {
         this.budgetRepository = budgetRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
         this.refItemRepository = refItemRepository;
         this.transactionRepository = transactionRepository;
+        this.historyService = historyService;
     }
 
     @Transactional(readOnly = true)
@@ -84,7 +93,17 @@ public class BudgetService {
 
         BudgetEntity savedBudget = budgetRepository.save(budget);
 
-        return mapToResponseDTO(savedBudget);
+        BudgetResponseDTO responseDTO = mapToResponseDTO(savedBudget);
+
+        try { 
+            String newValue = objectMapper.writeValueAsString(responseDTO);
+            historyService.appendEntry(user.getId(), OBJECT_TYPE_BUDGET, savedBudget.getId(), "CREATE", null, newValue);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
+
+        return responseDTO;
     }
 
     private BudgetResponseDTO mapToResponseDTO(BudgetEntity budget) {
@@ -119,7 +138,18 @@ public class BudgetService {
             throw new SecurityException("Authentication information is missing or invalid");
         }
 
+        BudgetResponseDTO previousBudget = mapToResponseDTO(budget);
+
+
         budgetRepository.delete(budget);
+
+        try { 
+            String previousValue = objectMapper.writeValueAsString(previousBudget);
+            historyService.appendEntry(userDetails.getId(), OBJECT_TYPE_BUDGET, budget.getId(), "DELETE", previousValue, null);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert entity to JSON string", e);
+        }
+
         return true;
     }
 

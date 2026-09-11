@@ -17,6 +17,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import moneytracking.demo.dto.AccountResponseDTO;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
@@ -120,6 +121,19 @@ public class AccountEntity {
         return "AccountEntity [id=" + id + ", user=" + user + ", name=" + name + ", type=" + type + ", initialBalance="
                 + initialBalance + ", currentBalance=" + currentBalance + ", createdAt=" + createdAt + ", updatedAt="
                 + updatedAt + "]";
+    }
+
+    public AccountResponseDTO mapToResponseDTO(AccountEntity account) {
+        AccountResponseDTO dto = new AccountResponseDTO();
+        dto.setId(account.getId());
+        dto.setName(account.getName());
+        if (account.getType() != null) {
+            dto.setTypeId(account.getType().getId());
+            dto.setTypeName(account.getType().getName());
+        }
+        dto.setInitialBalance(account.getInitialBalance());
+        dto.setCurrentBalance(account.getCurrentBalance());
+        return dto;
     }
 
 }

@@ -10,6 +10,6 @@ public interface SessionRepository extends JpaRepository<SessionEntity, Long> {
 
     SessionEntity findByTokenHash(String tokenHash);
 
-    List<SessionEntity> findByUserIdOrderByIdAsc(Long userId);
+    List<SessionEntity> findByUserIdOrderByLastActivityAtDesc(Long userId);
     
 }

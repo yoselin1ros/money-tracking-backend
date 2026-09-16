@@ -188,22 +188,20 @@ public class AuthController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @DeleteMapping("/sessions/")
-    public ResponseEntity<ApiResponse<Boolean>> revokeAllOtherSessions(@AuthenticationPrincipal CustomUserDetails userDetails,
-        @PathVariable Long id
-    ) {
-        Boolean revoked = authService.revokeAllOtherSessions(userDetails.getId());
-        ApiResponse<Boolean> response = new ApiResponse<>(true, "Other sessions were revoked successfully", revoked);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-
-    @DeleteMapping("/sessions/{id}")
+    @DeleteMapping(value = {"/sessions", "/sessions/{id}"})
     public ResponseEntity<ApiResponse<Boolean>> revokeSession(@AuthenticationPrincipal CustomUserDetails userDetails,
-        @PathVariable Long id
+        @PathVariable(required = false) Long id, HttpServletRequest request
     ) {
-        Boolean revoked = authService.revokeSession(userDetails.getId(), id);
-        ApiResponse<Boolean> response = new ApiResponse<>(true, "Session revoked successfully", revoked);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        if (id != null) {
+            Boolean revoked = authService.revokeSession(userDetails.getId(), id);
+            ApiResponse<Boolean> response = new ApiResponse<>(true, "Session revoked successfully", revoked);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } else {
+            Boolean revoked = authService.revokeAllOtherSessions(userDetails.getId(), request);
+            ApiResponse<Boolean> response = new ApiResponse<>(true, "Other sessions were revoked successfully", revoked);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
+        
     }
 
 }

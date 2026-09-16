@@ -294,7 +294,7 @@ public class AuthService {
     // sessions management
     @Transactional(readOnly = true)
     public List<SessionResponseDTO> listSessions(Long userId) {
-        return sessionRepository.findByUserIdOrderByIdAsc(userId).stream()
+        return sessionRepository.findByUserIdOrderByLastActivityAtDesc(userId).stream()
             .map(this::mapToResponseDTO)
             .collect(Collectors.toList());
     }
@@ -329,25 +329,26 @@ public class AuthService {
 
     // revoke all sessions for a user but keep the current session active
     @Transactional
-    public Boolean revokeAllOtherSessions(Long userId) {
-        // getting current session token from SecurityContext
-        Authentication currentUser = SecurityContextHolder.getContext().getAuthentication();
-        if (currentUser == null || !currentUser.isAuthenticated() || !(currentUser.getPrincipal() instanceof CustomUserDetails userDetails)) {
-            throw new SecurityException("Authentication information is missing or invalid");
-        }
-        // getting user from userDetails
-        UserEntity user = userRepository.findByEmail(userDetails.getUsername());
-        // getting current session token from SecurityContext
-        //String currentTokenHash = DigestUtils.md5DigestAsHex(userDetails.getToken().getBytes());
-
-        List<SessionEntity> sessions = sessionRepository.findByUserIdOrderByIdAsc(userId);
+    public Boolean revokeAllOtherSessions(Long userId, HttpServletRequest request) {
+        
+        String jwt = parseJwt(request);
+        SessionEntity currentSession = sessionRepository.findByTokenHash(DigestUtils.md5DigestAsHex(jwt.getBytes()));
+        List<SessionEntity> sessions = sessionRepository.findByUserIdOrderByLastActivityAtDesc(userId);
         for (SessionEntity session : sessions) {
             // only revoke sessions that are not the current session
-            // if (!session.getTokenHash().equals(currentTokenHash)) {
+            if (!session.getId().equals(currentSession.getId())) {
                 session.setRevoked(true);
-            // }
+            }
         }
         sessionRepository.saveAll(sessions);
         return true;
+    }
+
+    private String parseJwt(HttpServletRequest request) {
+        String headerAuth = request.getHeader("Authorization");
+        if (headerAuth != null && headerAuth.startsWith("Bearer ")) {
+            return headerAuth.substring(7);
+        }
+        return null;
     }
 }

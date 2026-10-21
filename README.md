@@ -37,3 +37,16 @@ The technology stack to be used for this app consist of:
 
 A single filter **`GlobalExceptionHandler`** to handle all exceptions to avoid repetition in each service, endpoint, etc. Handle different scenarios by emiting especific HTTP code status and body responses.
 
+## Building and Running container
+1. Rebuild the Spring Boot application
+.\mvnw.cmd clean package -DskipTests
+
+2. Build a fresh Docker image
+docker build --no-cache -t springio/demo .
+
+3. Run the container with the dev profile enabled
+docker run --name spring-demo -p 8080:8089 -e SPRING_PROFILES_ACTIVE=dev -e DB_PASSWORD="223344" springio/demo
+
+### Remove container
+docker rm -f spring-demo
+

@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://host.docker.internal:5432/money-tracking
+    username: postgres
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  flyway:
+    enabled: true
+    schemas: migrations
+    locations: classpath:db/migration
+
+logging:
+  level:
+    com.example: DEBUG
